@@ -172,8 +172,3 @@ int main(void)
     CloseWindow();                                                                      // close the window and OpenGL context
     return 0;                                                                           // exit the program
 }
-
-
-
-
-

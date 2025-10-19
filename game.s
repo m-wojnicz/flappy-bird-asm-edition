@@ -18,15 +18,15 @@
     #
     #  constants (so that I dont get candy modifying 2000000 liens of code when I want to change something small)
     #
-    gravity:                .long 1                                 # Value added to velocity each frame
-    flap_force:             .long -15                               # Instant velocity change on flap
-    pipe_speed:             .long -800                              # Initial pipe speed (fixed-point: -8.00 pixels/frame)
-    pipe_speed_accumulator: .long 0                                 # Sub-pixel accumulator for smooth speed
-    pipe_gap_half:          .long 120                               # Half the height of the gap between pipes
-    screen_width:           .long 1600                              # Window width
-    screen_height:          .long 1000                              # Window height
-    pipe_width:             .long 120                               # Visual width of the pipes
-    pipe_train_width:       .long 1650                              # Total width of the 3-pipe conveyor belt
+    gravity:                .long 1                                 # value added to velocity each frame
+    flap_force:             .long -15                               # instant velocity change on flap
+    pipe_speed:             .long -800                              # initial pipe speed (fixed-point: -8.00 pixels/frame)
+    pipe_speed_accumulator: .long 0                                 # sub-pixel accumulator for smooth speed
+    pipe_gap_half:          .long 120                               # half the height of the gap between pipes
+    screen_width:           .long 1600                              # window width
+    screen_height:          .long 1000                              # window height
+    pipe_width:             .long 120                               # visual width of the pipes
+    pipe_train_width:       .long 1650                              # total width of the 3-pipe conveyor belt
     bird_width:             .long 60                                # birds collision and drawing width
     bird_height:            .long 42                                # birds collision and drawing height
 
@@ -61,43 +61,33 @@
 .global game_main_loop                                      # make this function visible to the C wrapper
 
 #
-# C function externzz
-# declaring all the C helper functions imma call.
-#
-.extern c_begin_drawing, c_end_drawing, c_clear_screen, c_draw_bird_anim, c_draw_pipe
-.extern c_draw_text_black, c_draw_text_gray, c_is_space_pressed, c_is_space_down
-.extern c_is_space_released, c_get_random_value, sprintf
-.extern c_get_high_score, c_check_and_save_high_score
-.extern c_draw_background
-
-#
 # void game_main_loop()
 # gets called at the start of each loop and does everything
 # acts as a STATE MACHINE for the game and decides whats going on
 #
 game_main_loop:
     # pro
-    push    %rbp            #
-    mov     %rsp, %rbp      #
+    pushq    %rbp           #
+    movq     %rsp, %rbp     #
 
     # state machine switch
     movl    game_state(%rip), %eax                                  # load current game state
     cmpl    $0, %eax                                                # main menu?
-    je      .call_main_menu                                         # if so, jump to its handler function
+    je      call_main_menu                                         # if so, jump to its handler function
     cmpl    $1, %eax                                                # gameplay?
-    je      .call_gameplay                                          # if so, jump to its handler fucntion
+    je      call_gameplay                                          # if so, jump to its handler fucntion
     cmpl    $2, %eax                                                # game over?
-    je      .call_game_over                                         # if so, jump to its handler function
-    jmp     .end_main_loop                                          # failsafe jump (i hope its not needed)
+    je      call_game_over                                         # if so, jump to its handler function
+    jmp     end_main_loop                                          # failsafe jump (i hope its not needed)
 
-    .call_main_menu:    call handle_main_menu; jmp .end_main_loop   # call and exit when back
-    .call_gameplay:     call handle_gameplay; jmp .end_main_loop    # call and exit when back
-    .call_game_over:    call handle_game_over; jmp .end_main_loop   # call and exit when back
+    call_main_menu:    call handle_main_menu; jmp end_main_loop   # call and exit when back
+    call_gameplay:     call handle_gameplay; jmp end_main_loop    # call and exit when back
+    call_game_over:    call handle_game_over; jmp end_main_loop   # call and exit when back
 
-    .end_main_loop:
+    end_main_loop:
     # epi
     movq	%rbp, %rsp      #
-    pop     %rbp            #
+    popq     %rbp           #
     ret                     # going back to C wrapper
 
 #
@@ -106,19 +96,19 @@ game_main_loop:
 #
 handle_main_menu:
     # pro
-    push    %rbp            #
-    mov     %rsp, %rbp      #  
+    pushq    %rbp           #
+    movq     %rsp, %rbp     #  
 
     # logic
     call    c_is_space_pressed                              # check if space was just pressed
     cmpb    $0, %al                                         # test the boolean result
-    jz      .draw_menu                                      # if not pressed, just draw the menu
+    jz      draw_menu                                      # if not pressed, just draw the menu
     
     call    reset_game_state                                # if pressed, reset all game variables
     movl    $1, game_state(%rip)                            # and change state to gameplay (1)
-    jmp     .menu_done                                      # skip drawing the menu this frame
+    jmp     menu_done                                      # skip drawing the menu this frame
 
-    .draw_menu:
+    draw_menu:
     # DRAWING
     call    c_begin_drawing                                 #
     movl    background_scroll_x(%rip), %eax                 # get scroll position for bg
@@ -136,7 +126,7 @@ handle_main_menu:
     call    c_draw_text_black                               # draw the instruction text
     call    c_end_drawing                                   # wrapper that calls EndDrawing()
 
-    .menu_done:
+    menu_done:
     # epi
     movq	%rbp, %rsp      #
 	popq	%rbp            # 
@@ -164,19 +154,19 @@ handle_gameplay:
 #
 handle_game_over:
     # pro
-    push %rbp               #
-    mov %rsp, %rbp          #   
+    pushq    %rbp           #
+    movq     %rsp, %rbp     #   
     # logic
     movl    score(%rip), %edi                               # get final score
     call    c_check_and_save_high_score                     # check if its a new high score and save
     call    c_is_space_pressed                              # check for restart spacepress
     cmpb    $0, %al                                         #
-    jz      .draw_gameover                                  # if not pressed, just draw
+    jz      draw_gameover                                   # if not pressed, just draw
     
     movl    $0, game_state(%rip)                            # if pressed, change state back to main menu (0)
-    jmp     .gameover_done                                  # skip drawing this frame
+    jmp     gameover_done                                   # skip drawing this frame
 
-    .draw_gameover:
+    draw_gameover:
     # drawing
     call    c_begin_drawing                                 #
     movl    background_scroll_x(%rip), %eax                 # get scroll position
@@ -218,7 +208,7 @@ handle_game_over:
     
     call    c_end_drawing                                   #
 
-    .gameover_done:
+    gameover_done:
     # epi
     movq	%rbp, %rsp      #
 	popq	%rbp            # 
@@ -230,17 +220,17 @@ handle_game_over:
 #
 update_game:
     # PROLOGUE
-    push    %rbp            #
-    mov     %rsp, %rbp      #
+    pushq    %rbp            #
+    movq     %rsp, %rbp      #
 
     # bg scroll
     movl    background_scroll_x(%rip), %eax                 # load scroll position
     subl    $1, %eax                                        # move 1 pixel left
     movl    %eax, background_scroll_x(%rip)                 # save it back
     cmpl    $-1600, %eax                                    # check if it scrolled the entire width
-    jg      .no_bg_reset                                    # if not, skip reset
+    jg      no_bg_reset                                    # if not, skip reset
     movl    $0, background_scroll_x(%rip)                   # if yess, reset to 0 to create the loop
-    .no_bg_reset:
+    no_bg_reset:
 
     # birdo physics and rotata
     movl    bird_velocity(%rip), %eax                       # load velocity
@@ -252,9 +242,9 @@ update_game:
     movl    bird_velocity(%rip), %eax                       # for rotation, use velocity
     imull   $2, %eax                                        # multiply by 2 for a nice effect
     cmpl    $90, %eax                                       # cap the rotation at 90 degrees (pointing down)
-    jle     .rot_ok                                         #
+    jle     rot_ok                                         #
     movl    $90, %eax                                       #
-    .rot_ok:
+    rot_ok:
     movl    %eax, bird_rotation(%rip)                       # save new rotation
 
     # bird frames animation
@@ -262,33 +252,33 @@ update_game:
     addl    $1, %eax                                        # increment it
     movl    %eax, anim_counter(%rip)                        #
     cmpl    $10, %eax                                       # has it reached 10 frames?
-    jl      .anim_done                                      # if not, skip
+    jl      anim_done                                       # if not, skip
     movl    $0, anim_counter(%rip)                          # if so, reset timer
     movl    anim_frame(%rip), %eax                          # load current frame
     addl    $1, %eax                                        # go to next frame
     cmpl    $3, %eax                                        # have we gone past frame 2?
-    jne     .frame_ok                                       # if not, it's fine
+    jne     frame_ok                                        # if not, it's fine
     movl    $0, %eax                                        # if so, loop back to frame 0
-    .frame_ok:
+    frame_ok:
     movl    %eax, anim_frame(%rip)                          # save the new frame
-    .anim_done:
+    anim_done:
 
     # input
     call    c_is_space_down                                 # is space held down rn
     cmpb    $0, %al                                         #
-    jz      .space_not_down                                 #
+    jz      space_not_down                                  #
     movb    can_flap(%rip), %al                             # is the can_flap flag true?
     cmpb    $0, %al                                         #
-    jz      .space_not_down                                 #
+    jz      space_not_down                                  #
     movl    flap_force(%rip), %eax                          # if both are true, flap
     movl    %eax, bird_velocity(%rip)                       #
     movb    $0, can_flap(%rip)                              # and disable flapping until key is released
-    .space_not_down:
+    space_not_down:
     call    c_is_space_released                             # did the player stop pressing
     cmpb    $0, %al                                         #
-    jz      .input_done                                     # if not, we're so done fr
+    jz      input_done                                      # if not, we're so done fr
     movb    $1, can_flap(%rip)                              # if ye, re-enable flapping
-    .input_done:
+    input_done:
 
     # pipe logic (secret fixed point movement tech for smooth scroooool)
     movl    pipe_speed_accumulator(%rip), %eax              # load the pixel remainder
@@ -302,11 +292,10 @@ update_game:
     addl    %eax, pipe3_x(%rip)                             #
 
     # pipe respawns 
-
     movl    pipe1_x(%rip), %eax                             # load x
     addl    pipe_width(%rip), %eax                          # add width to see if it is completely gone
     cmpl    $0, %eax                                        # if it isnt
-    jg      .p1_ok                                          # no need to respawn
+    jg      p1_ok                                           # no need to respawn
     movl    pipe1_x(%rip), %eax                             # else load x 
     addl    pipe_train_width(%rip), %eax                    # wrap around
     movl    %eax, pipe1_x(%rip)                             # store new x 
@@ -315,12 +304,12 @@ update_game:
     call    c_get_random_value                              # (int, int)
     movl    %eax, pipe1_y(%rip)                             # store the new random ahh gap
     movl    $0, pipe1_scored(%rip)                          # flag as not yet scored so poitns can be earned again
-    .p1_ok:
+    p1_ok:
 
     movl    pipe2_x(%rip), %eax                             #
     addl    pipe_width(%rip), %eax                          #
     cmpl    $0, %eax                                        #
-    jg      .p2_ok                                          #
+    jg      p2_ok                                           #
     movl    pipe2_x(%rip), %eax                             #
     addl    pipe_train_width(%rip), %eax                    # same as pipe 1 but for piep 2
     movl    %eax, pipe2_x(%rip)                             #
@@ -329,12 +318,12 @@ update_game:
     call    c_get_random_value                              #
     movl    %eax, pipe2_y(%rip)                             #
     movl    $0, pipe2_scored(%rip)                          #
-    .p2_ok:
+    p2_ok:
 
     movl    pipe3_x(%rip), %eax                             #
     addl    pipe_width(%rip), %eax                          #
     cmpl    $0, %eax                                        #
-    jg      .p3_ok                                          #
+    jg      p3_ok                                           #
     movl    pipe3_x(%rip), %eax                             #
     addl    pipe_train_width(%rip), %eax                    #
     movl    %eax, pipe3_x(%rip)                             # same as pipe 1 but for pipe 3
@@ -343,138 +332,140 @@ update_game:
     call    c_get_random_value                              #
     movl    %eax, pipe3_y(%rip)                             #
     movl    $0, pipe3_scored(%rip)                          #
-    .p3_ok:
+    p3_ok:
 
     # collision and scoring
     # ground/ceiling check
-    movl    bird_y(%rip), %eax
-    addl    $21, %eax;
-    cmpl    screen_height(%rip), %eax
-    jl      .no_g
-    movl    $2, game_state(%rip)
-    .no_g:
-    movl    bird_y(%rip), %eax 
-    subl    $21, %eax
-    cmpl    $0, %eax
-    jg      .no_c
-    movl    $2, game_state(%rip)
-    .no_c:
+    movl    bird_y(%rip), %eax                              # load y position
+    addl    $21, %eax;                                      # add 21 to get top of bird
+    cmpl    screen_height(%rip), %eax                       # compare to screen height
+    jl      no_g                                            # if less then we havent touched za groundo
+    movl    $2, game_state(%rip)                            # if geq then gg its over he knows
+    no_g:
+    movl    bird_y(%rip), %eax                              #
+    subl    $21, %eax                                       # sub 21 to get bottom of bird
+    cmpl    $0, %eax                                        #
+    jg      no_c                                            #
+    movl    $2, game_state(%rip)                            #
+    no_c:  
     
     # pipe check (a bit messy, but it works, I think?)
     # pipe 1
-    movl pipe_gap_half(%rip), %r10d
-    movl bird_x(%rip), %eax
-    addl $30, %eax
-    cmpl pipe1_x(%rip), %eax
-    jl .no_p1 
-    movl bird_x(%rip), %eax
-    subl $30, %eax
-    movl pipe1_x(%rip), %ebx
-    addl pipe_width(%rip), %ebx
-    cmpl %ebx, %eax; jg .no_p1
-    movl bird_y(%rip), %eax
-    subl $21, %eax
-    movl pipe1_y(%rip), %ebx
-    subl %r10d, %ebx 
-    cmpl %ebx, %eax; jle .p1 
-    movl bird_y(%rip), %eax 
-    addl $21, %eax 
-    movl pipe1_y(%rip), %ebx 
-    addl %r10d, %ebx 
-    cmpl %ebx, %eax 
-    jge .p1
-    jmp .no_p1
-    .p1: 
-    movl $2, game_state(%rip);
-    .no_p1:
+    movl    pipe_gap_half(%rip), %r10d                      # %r10 caller saved all good
+    movl    bird_x(%rip), %eax                              #
+    addl    $30, %eax                                       # short circuiting whether the bird is horizontally within the pipe
+    cmpl    pipe1_x(%rip), %eax                             # left side
+    jl      no_p1                                           #
+    movl    bird_x(%rip), %eax                              #
+    subl    $30, %eax                                       #
+    movl    pipe1_x(%rip), %ebx                             #
+    addl    pipe_width(%rip), %ebx                          #
+    cmpl    %ebx, %eax                                      # right side
+    jg      no_p1                                           #
+    movl    bird_y(%rip), %eax                              #
+    subl    $21, %eax                                       # get brid top edge
+    movl    pipe1_y(%rip), %ebx                             #
+    subl    %r10d, %ebx                                     #
+    cmpl    %ebx, %eax                                      # and see if we touching the gpipep
+    jle     p1                                              #
+    movl    bird_y(%rip), %eax                              #
+    addl    $21, %eax                                       #
+    movl    pipe1_y(%rip), %ebx                             #
+    addl    %r10d, %ebx                                     #
+    cmpl    %ebx, %eax                                      #
+    jge     p1                                              #
+    jmp     no_p1                                           #
+    p1:                                                     #
+    movl    $2, game_state(%rip)                            #
+    no_p1:                                                  #
     # pipe 2
-    movl bird_x(%rip), %eax
-    addl $30, %eax
-    cmpl pipe2_x(%rip), %eax
-    jl .no_p2
-    movl bird_x(%rip), %eax
-    subl $30, %eax
-    movl pipe2_x(%rip), %ebx
-    addl pipe_width(%rip), %ebx
-    cmpl %ebx, %eax 
-    jg .no_p2
-    movl bird_y(%rip), %eax
-    subl $21, %eax
-    movl pipe2_y(%rip), %ebx 
-    subl %r10d, %ebx
-    cmpl %ebx, %eax
-    jle .p2
-    movl bird_y(%rip), %eax
-    addl $21, %eax
-    movl pipe2_y(%rip), %ebx
-    addl %r10d, %ebx
-    cmpl %ebx, %eax
-    jge .p2
-    jmp .no_p2
-    .p2: 
-    movl $2, game_state(%rip)
-    .no_p2:
+    movl    bird_x(%rip), %eax                              #
+    addl    $30, %eax                                       #
+    cmpl    pipe2_x(%rip), %eax                             #
+    jl      no_p2                                           #
+    movl    bird_x(%rip), %eax                              #    
+    subl    $30, %eax                                       #
+    movl    pipe2_x(%rip), %ebx                             #
+    addl    pipe_width(%rip), %ebx                          #
+    cmpl    %ebx, %eax                                      #
+    jg      no_p2                                           #
+    movl    bird_y(%rip), %eax                              # same as pipe 1 buit pipe 2
+    subl    $21, %eax                                       #
+    movl    pipe2_y(%rip), %ebx                             #
+    subl    %r10d, %ebx                                     #
+    cmpl    %ebx, %eax                                      #
+    jle     p2                                              #
+    movl    bird_y(%rip), %eax                              #
+    addl    $21, %eax                                       #
+    movl    pipe2_y(%rip), %ebx                             #
+    addl    %r10d, %ebx                                     #
+    cmpl    %ebx, %eax                                      #
+    jge     p2                                              #
+    jmp     no_p2                                           #
+    p2:                                                     #
+    movl    $2, game_state(%rip)                            #
+    no_p2:                                                  #
     # pipe 3
-    movl bird_x(%rip), %eax
-    addl $30, %eax
-    cmpl pipe3_x(%rip), %eax
-    jl .no_p3
-    movl bird_x(%rip), %eax
-    subl $30, %eax
-    movl pipe3_x(%rip), %ebx
-    addl pipe_width(%rip), %ebx
-    cmpl %ebx, %eax
-    jg .no_p3
-    movl bird_y(%rip), %eax
-    subl $21, %eax
-    movl pipe3_y(%rip), %ebx
-    subl %r10d, %ebx
-    cmpl %ebx, %eax
-    jle .p3
-    movl bird_y(%rip), %eax
-    addl $21, %eax
-    movl pipe3_y(%rip), %ebx
-    addl %r10d, %ebx
-    cmpl %ebx, %eax
-    jge .p3
-    jmp .no_p3
-    .p3:
-    movl $2, game_state(%rip)
-    .no_p3:
+    movl    bird_x(%rip), %eax                              #
+    addl    $30, %eax                                       #
+    cmpl    pipe3_x(%rip), %eax                             #
+    jl      no_p3                                           #
+    movl    bird_x(%rip), %eax                              #
+    subl    $30, %eax                                       #
+    movl    pipe3_x(%rip), %ebx                             #
+    addl    pipe_width(%rip), %ebx                          #    
+    cmpl    %ebx, %eax                                      #
+    jg      no_p3                                           #
+    movl    bird_y(%rip), %eax                              # same as pipe 1 but pipe 3
+    subl    $21, %eax                                       #
+    movl    pipe3_y(%rip), %ebx                             #    
+    subl    %r10d, %ebx                                     #
+    cmpl    %ebx, %eax                                      #
+    jle     p3                                              #
+    movl    bird_y(%rip), %eax                              #
+    addl    $21, %eax                                       #
+    movl    pipe3_y(%rip), %ebx                             #
+    addl    %r10d, %ebx                                     #
+    cmpl    %ebx, %eax                                      #
+    jge     p3                                              #
+    jmp     no_p3                                           #
+    p3:                                                     #
+    movl    $2, game_state(%rip)                            #
+    no_p3:                                                  #
     
     # scoring check (did bird pass te pipe)
     # pipe1
-    cmpl $0, pipe1_scored(%rip)
-    jne .p1_s
-    movl pipe1_x(%rip), %eax
-    addl pipe_width(%rip), %eax
-    cmpl bird_x(%rip), %eax
-    jg .p1_s
-    call increase_score_and_difficulty 
-    movl $1, pipe1_scored(%rip)
-    .p1_s:
+    cmpl    $0, pipe1_scored(%rip)                          # load whether this pipe has already been passed (so its score counted) 
+    jne     p1_skip                                         # if so we skip tis
+    movl    pipe1_x(%rip), %eax                             # get pipe x position
+    addl    pipe_width(%rip), %eax                          # add pipe width to it
+    cmpl    bird_x(%rip), %eax                              # compare it to bird x
+    jg      p1_skip                                         # if greater, means we have not passed yet, so skip
+    call    increase_score_and_difficulty                   # else add 1 score and speed up the game
+    movl    $1, pipe1_scored(%rip)                          # update the flag so we dont score infinitely
+    p1_skip:                                                # 
 
     # pipe 2
-    cmpl $0, pipe2_scored(%rip)
-    jne .p2_s
-    movl pipe2_x(%rip), %eax
-    addl pipe_width(%rip), %eax
-    cmpl bird_x(%rip), %eax
-    jg .p2_s
-    call increase_score_and_difficulty
-    movl $1, pipe2_scored(%rip)
-    .p2_s:
+    cmpl    $0, pipe2_scored(%rip)                          #
+    jne     p2_skip                                         #
+    movl    pipe2_x(%rip), %eax                             #
+    addl    pipe_width(%rip), %eax                          #
+    cmpl    bird_x(%rip), %eax                              # same as pipe 1
+    jg      p2_skip                                         #      
+    call    increase_score_and_difficulty                   #
+    movl    $1, pipe2_scored(%rip)                          #
+    p2_skip:                                                #
 
     # pipe 3
-    cmpl $0, pipe3_scored(%rip)
-    jne .p3_s
-    movl pipe3_x(%rip), %eax
-    addl pipe_width(%rip), %eax
-    cmpl bird_x(%rip), %eax
-    jg .p3_s
-    call increase_score_and_difficulty
-    movl $1, pipe3_scored(%rip)
-    .p3_s:
+    cmpl    $0, pipe3_scored(%rip)                          #
+    jne     p3_skip                                         #
+    movl    pipe3_x(%rip), %eax                             #
+    addl    pipe_width(%rip), %eax                          #
+    cmpl    bird_x(%rip), %eax                              # same as pipe 1\
+    jg      p3_skip                                         #
+    call    increase_score_and_difficulty                   #
+    movl    $1, pipe3_scored(%rip)                          #                 
+    p3_skip:                                                #
     
     # epi
     movq	%rbp, %rsp      #
@@ -487,8 +478,8 @@ update_game:
 #
 draw_game:
     # pro
-    push %rbp               #
-    mov %rsp, %rbp          #
+    pushq   %rbp            #
+    movq    %rsp, %rbp      #  
 
     # drawing
     call    c_begin_drawing                                 # void
@@ -540,8 +531,8 @@ draw_game:
 #
 reset_game_state:
     # pro
-    push %rbp               #
-    mov %rsp, %rbp          #
+    pushq    %rbp           #
+    movq     %rsp, %rbp     #
 
     # logic
     call    c_get_high_score                                #
@@ -578,8 +569,8 @@ reset_game_state:
 #
 increase_score_and_difficulty:
     # pro
-    push %rbp               #
-    mov %rsp, %rbp          #
+    push    %rbp            #
+    mov     %rsp, %rbp      #
 
     # logic
     movl    score(%rip), %eax                               #
