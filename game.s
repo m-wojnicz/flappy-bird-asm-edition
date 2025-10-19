@@ -358,21 +358,21 @@ update_game:
     jl      no_p1                                           #
     movl    bird_x(%rip), %eax                              #
     subl    $30, %eax                                       #
-    movl    pipe1_x(%rip), %r11d                             #
-    addl    pipe_width(%rip), %r11d                          #
-    cmpl    %r11d, %eax                                      # right side
+    movl    pipe1_x(%rip), %r11d                            #
+    addl    pipe_width(%rip), %r11d                         #
+    cmpl    %r11d, %eax                                     # right side
     jg      no_p1                                           #
     movl    bird_y(%rip), %eax                              #
     subl    $21, %eax                                       # get brid top edge
-    movl    pipe1_y(%rip), %r11d                             #
-    subl    %r10d, %r11d                                     #
-    cmpl    %r11d, %eax                                      # and see if we touching the gpipep
+    movl    pipe1_y(%rip), %r11d                            #
+    subl    %r10d, %r11d                                    #
+    cmpl    %r11d, %eax                                     # and see if we touching the gpipep
     jle     p1                                              #
     movl    bird_y(%rip), %eax                              #
     addl    $21, %eax                                       #
-    movl    pipe1_y(%rip), %r11d                             #
-    addl    %r10d, %r11d                                     #
-    cmpl    %r11d, %eax                                      #
+    movl    pipe1_y(%rip), %r11d                            #
+    addl    %r10d, %r11d                                    #
+    cmpl    %r11d, %eax                                     #
     jge     p1                                              #
     jmp     no_p1                                           #
     p1:                                                     #
@@ -385,21 +385,21 @@ update_game:
     jl      no_p2                                           #
     movl    bird_x(%rip), %eax                              #    
     subl    $30, %eax                                       #
-    movl    pipe2_x(%rip), %r11d                             #
-    addl    pipe_width(%rip), %r11d                          #
-    cmpl    %r11d, %eax                                      #
+    movl    pipe2_x(%rip), %r11d                            #
+    addl    pipe_width(%rip), %r11d                         #
+    cmpl    %r11d, %eax                                     #
     jg      no_p2                                           #
     movl    bird_y(%rip), %eax                              # same as pipe 1 buit pipe 2
     subl    $21, %eax                                       #
-    movl    pipe2_y(%rip), %r11d                             #
-    subl    %r10d, %r11d                                     #
-    cmpl    %r11d, %eax                                      #
+    movl    pipe2_y(%rip), %r11d                            #
+    subl    %r10d, %r11d                                    #
+    cmpl    %r11d, %eax                                     #
     jle     p2                                              #
     movl    bird_y(%rip), %eax                              #
     addl    $21, %eax                                       #
-    movl    pipe2_y(%rip), %r11d                             #
-    addl    %r10d, %r11d                                     #
-    cmpl    %r11d, %eax                                      #
+    movl    pipe2_y(%rip), %r11d                            #
+    addl    %r10d, %r11d                                    #
+    cmpl    %r11d, %eax                                     #
     jge     p2                                              #
     jmp     no_p2                                           #
     p2:                                                     #
@@ -412,21 +412,21 @@ update_game:
     jl      no_p3                                           #
     movl    bird_x(%rip), %eax                              #
     subl    $30, %eax                                       #
-    movl    pipe3_x(%rip), %r11d                             #
-    addl    pipe_width(%rip), %r11d                          #    
-    cmpl    %r11d, %eax                                      #
+    movl    pipe3_x(%rip), %r11d                            #
+    addl    pipe_width(%rip), %r11d                         #    
+    cmpl    %r11d, %eax                                     #
     jg      no_p3                                           #
     movl    bird_y(%rip), %eax                              # same as pipe 1 but pipe 3
     subl    $21, %eax                                       #
-    movl    pipe3_y(%rip), %r11d                             #    
-    subl    %r10d, %r11d                                     #
-    cmpl    %r11d, %eax                                      #
+    movl    pipe3_y(%rip), %r11d                            #    
+    subl    %r10d, %r11d                                    #
+    cmpl    %r11d, %eax                                     #
     jle     p3                                              #
     movl    bird_y(%rip), %eax                              #
     addl    $21, %eax                                       #
-    movl    pipe3_y(%rip), %r11d                             #
-    addl    %r10d, %r11d                                     #
-    cmpl    %r11d, %eax                                      #
+    movl    pipe3_y(%rip), %r11d                            #
+    addl    %r10d, %r11d                                    #
+    cmpl    %r11d, %eax                                     #
     jge     p3                                              #
     jmp     no_p3                                           #
     p3:                                                     #
